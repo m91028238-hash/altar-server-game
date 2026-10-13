@@ -38,3 +38,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1a0e08;font-family:Ge
 .panel{max-height:calc(100vh - var(--hh,44px) - 16px);overflow:auto}
 .center{top:var(--hh,44px)}
 @media(max-width:420px){.card{width:46%}#hud{gap:4px;padding:6px}.pill{padding:3px 8px;font-size:12px}}
+#lostspot{position:fixed;width:84px;height:84px;transform:translate(-50%,-50%);border-radius:50%;border:3px solid #fff6c8;background:radial-gradient(#fffbe0,rgba(255,215,110,.5) 55%,transparent 70%);z-index:4;animation:pulse 1s infinite;cursor:pointer}
+@keyframes pulse{50%{box-shadow:0 0 0 14px rgba(255,233,160,.45),0 0 40px #ffe9a0;border-color:#fff}}
+#arrow{position:fixed;transform:translateX(-50%);font-size:44px;color:#ffe27a;text-shadow:0 0 10px #000;z-index:4;pointer-events:none;animation:bob .6s infinite alternate}
+@keyframes bob{to{margin-top:12px}}

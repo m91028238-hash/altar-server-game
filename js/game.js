@@ -58,22 +58,25 @@ function charScr(){scene={bg:'sacristy',draw:()=>spr(IMG[RANKS[rank()][2]],W*.5,
  UI.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{S.sp--;S.base[b.dataset.st]+=b.dataset.st=='faith'?10:1;save();sfx('ok');charScr()});
  UI.querySelectorAll('[data-sk]').forEach(b=>b.onclick=()=>{S.sp--;S.skills.push(b.dataset.sk);save();sfx('holy');charScr()})}
 // ---------- MISSION: PREP ----------
-function prep(m){const sea=m.id=='prep1'?SEASONS[0]:SEASONS[1+Math.floor(Math.random()*(SEASONS.length-1))];
- let items=sea.items.slice().sort(()=>Math.random()-.5);const lost=m.id!='prep1'||Math.random()<.5?items[Math.floor(Math.random()*items.length)]:null;
- let placed=0,mist=0,sel=null,found=!lost,time=60+stats().wis*4,total=items.length;scene={bg:'church',tick:dt=>{time-=dt;if(time<=0&&scene.tick){scene.tick=null;fin()}},draw:()=>{spr(IMG.server,W*.18,H*.86,H*.16);spr(IMG.priest,W*.85,H*.42,H*.14,1);if(!found){const a=.5+.5*Math.sin(T*4);cx.fillStyle=`rgba(255,230,140,${a*.5})`;cx.beginPath();cx.arc(lx*W,ly*H,18,0,6.28);cx.fill()}}};
- const lx=.15+Math.random()*.7,ly=.66+Math.random()*.08;
- function fin(){result(sea.n+' Prep',30+placed*5-mist*3,10+placed*3,placed>=total-1&&time>0||placed==total,m.id)}
- function draw(){hud(`<span class="pill" style="border-color:${sea.c}">${sea.n}</span><span class="pill">⏱ ${Math.ceil(time)}</span>`);
+function prep(m){const first=m.id=='prep1'&&!S.done.prep1;const sea=m.id=='prep1'?SEASONS[0]:SEASONS[1+Math.floor(Math.random()*(SEASONS.length-1))];
+ let items=sea.items.slice().sort(()=>Math.random()-.5);const total=items.length;
+ const lost=window.G.forceLost?items[0]:(!first&&Math.random()<.7?items[Math.floor(Math.random()*items.length)]:null);
+ const spots=[[16,46],[84,46],[24,74],[46,72]],sp=spots[Math.random()*spots.length|0],lx=sp[0]/100,ly=sp[1]/100;
+ let placed=0,mist=0,sel=null,found=!lost,time=75+stats().wis*4,t0=T,done=0;
+ scene={bg:'church',tick:dt=>{if(done)return;time-=dt;if(time<=0){done=1;fin(false)}},draw:()=>{spr(IMG.server,W*.18,H*.86,H*.16);spr(IMG.priest,W*.85,H*.42,H*.14,1);if(!found){const a=.5+.5*Math.sin(T*5);const g=cx.createRadialGradient(lx*W,ly*H,2,lx*W,ly*H,50);g.addColorStop(0,`rgba(255,250,200,${.6+a*.4})`);g.addColorStop(1,'rgba(255,220,120,0)');cx.fillStyle=g;cx.beginPath();cx.arc(lx*W,ly*H,50,0,6.28);cx.fill();if(Math.random()<.2)burst(lx*W,ly*H,'255,240,180',2,1.5)}}};
+ function fin(ok){done=1;scene.tick=null;result(sea.n+' Prep',30+placed*5-mist*3,10+placed*3,ok,m.id)}
+ function ready(){done=1;sfx('lvl');burst(W/2,H*.45,'255,240,180',70,5);h(`<div class="center"><div class="panel" style="text-align:center"><h2>Mass is ready!</h2><p>Every item is in its place. Fr. Thomas smiles.</p><button class="btn" id="cont">Continue ▶</button></div></div>`);$('#cont').onclick=()=>fin(true)}
+ function draw(){if(done)return;hud(`<span class="pill" style="border-color:${sea.c}">${sea.n}</span><span class="pill" id="tmr">⏱ ${Math.ceil(time)}</span><span class="pill">${placed}/${total}</span>`);
   let s='';for(const z in ZONES){const Z=ZONES[z];s+=`<div class="zone" data-z="${z}" style="left:${Z[1]}%;top:${Z[2]}%;width:${Z[3]}%;height:${Z[4]}%">${Z[0]}</div>`}
-  s+=`<div class="log">${sel?'Place: <b>'+ITEMS[sel][0]+'</b>':'Tap an item, then where it belongs.'}${!found?'<br>✨ The '+ITEMS[lost][0]+' is missing! Search the pews for a glint.':''}</div><div class="tray">`;
+  s+=`<div class="log">${sel?'Place: <b>'+ITEMS[sel][0]+'</b>':'Tap an item, then where it belongs.'}${!found?'<br>✨ The '+ITEMS[lost][0]+' is missing! Tap the glowing glint in the church.':''}</div><div class="tray">`;
   items.forEach(k=>{if(k==lost&&!found)return;s+=`<div class="it ${sel==k?'sel':''}" data-i="${k}"><img src="assets/i_${k}.webp" alt="${ITEMS[k][0]}" title="${ITEMS[k][0]}"></div>`});
-  if(!found)s+=`<div id="lostspot" style="position:fixed;left:${lx*100}vw;top:${ly*100}vh;width:60px;height:60px;transform:translate(-50%,-50%);border-radius:50%"></div>`;
-  h(s+'</div>');
+  s+='</div>';if(!found)s+=`<button id="lostspot" aria-label="glint" style="left:${sp[0]}vw;top:${sp[1]}vh"></button><div id="arrow" class="${T-t0>8?'':'hide'}" style="left:${sp[0]}vw;top:calc(${sp[1]}vh - 70px)">⬇</div>`;
+  h(s);
   UI.querySelectorAll('[data-i]').forEach(e=>e.onclick=()=>{sel=e.dataset.i;sfx('tap');draw()});
-  UI.querySelectorAll('[data-z]').forEach(e=>e.onclick=ev=>{if(!sel)return;if(ITEMS[sel][1]==e.dataset.z){placed++;burst(ev.clientX,ev.clientY);sfx('ok');items=items.filter(k=>k!=sel);sel=null;if(!items.length){scene.tick=null;fin();return}}else{mist++;time-=3;sfx('bad');toast('Not there — think: where is it used?')}draw()});
+  UI.querySelectorAll('[data-z]').forEach(e=>e.onclick=ev=>{if(!sel)return;if(ITEMS[sel][1]==e.dataset.z){placed++;burst(ev.clientX,ev.clientY);sfx('ok');items=items.filter(k=>k!=sel);sel=null;if(!items.length){ready();return}}else{mist++;time-=3;sfx('bad');toast('Not there — think: where is it used?')}draw()});
   const ls=$('#lostspot');if(ls)ls.onclick=()=>{found=true;sfx('ok');burst(lx*W,ly*H,'255,240,180',40);toast('Found the '+ITEMS[lost][0]+'!');draw()}}
- if(sea.note)toast(sea.note);draw();const iv=setInterval(()=>{if(!scene.tick){clearInterval(iv);return}const p=$('.pill:nth-child(5)');if(p)p.textContent='⏱ '+Math.ceil(time)},250);
- window.G.cur={type:'prep',auto:()=>{found=true;items.forEach(()=>placed++);items=[];scene.tick=null;fin()}}}
+ if(sea.note)toast(sea.note);draw();const iv=setInterval(()=>{if(done||scene.tick==null){clearInterval(iv);return}const p=$('#tmr');if(p)p.textContent='⏱ '+Math.ceil(time);const ar=$('#arrow');if(ar&&T-t0>8)ar.classList.remove('hide')},250);
+ window.G.cur={type:'prep',state:()=>({items,lost,found,done})}}
 // ---------- MISSION: BELLS ----------
 function bells(m){const cues=['Epiclesis','Elevation of the Host','Elevation of the Host','Elevation of the Chalice','Elevation of the Chalice','Ecce Agnus Dei'];let notes=[],t0=T+2,score=0,hits=0,idx=0;
  cues.forEach((c,i)=>notes.push({t:t0+i*1.6+Math.random()*.4,c,st:0}));const lineY=()=>H*.72,speed=()=>H*.35,win=.18+stats().wis*.01;
@@ -110,7 +113,7 @@ function proc(m){let lane=1,dist=0,goal=60,obs=[],hitc=0,inc=0,spawn=0,over=0;co
  hud();h(`<div class="log"><span id="pst"></span><br>Swipe / tap left-right (or arrow keys). Avoid obstacles, gather incense clouds.</div><div id="pl" style="position:absolute;left:0;top:0;bottom:0;width:50%"></div><div id="pr" style="position:absolute;right:0;top:0;bottom:0;width:50%"></div>`);
  $('#pl').onpointerdown=()=>lane=Math.max(0,lane-1);$('#pr').onpointerdown=()=>lane=Math.min(2,lane+1);
  const kd=e=>{if(e.key=='ArrowLeft')lane=Math.max(0,lane-1);if(e.key=='ArrowRight')lane=Math.min(2,lane+1)};addEventListener('keydown',kd);
- window.G.cur={type:'proc',auto:()=>{dist=goal}}}
+ window.G.cur={type:'proc',state:()=>({lane,obs:obs.map(o=>({l:o.l,y:o.y/H,k:o.k,d:o.d}))}),auto:()=>{dist=goal}}}
 window.G={S,hub,start:id=>start(MISSIONS.find(m=>m.id==id)),cur:null};
 let imgsLeft=Object.keys(IMG).length;Object.values(IMG).forEach(i=>{const f=()=>{if(--imgsLeft==0)0};i.onload=f;i.onerror=()=>console.warn('img fail',i.src)});
 hub();

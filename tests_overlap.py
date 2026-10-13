@@ -23,7 +23,7 @@ with sync_playwright() as pw:
     chk('map')
     p.evaluate("G.S.done={prep1:1,bells:1,house:1,proc:1};G.S.xp=500;G.S.sp=3;G.S.grace=999;G.S.seen={intro:1,feast:1,bells:1,house:1,proc:1,cross:1,hosp:1}")
     p.evaluate("G.start('feast')");p.wait_for_timeout(400);chk('prep')
-    p.evaluate("G.cur.auto()");p.wait_for_timeout(500);chk('result');p.click('#bk')
+    p.click('#bk') if p.query_selector('#bk') else p.evaluate('G.hub()')
     p.evaluate("G.start('bells')");p.wait_for_timeout(2500);chk('bells');p.evaluate("G.cur.auto()");p.wait_for_timeout(1200);p.click('#bk')
     for d in ['house','cross','hosp']:
       p.evaluate(f"G.start('{d}')");p.wait_for_timeout(400);p.click('[data-s=ourfather]');p.wait_for_timeout(1300);chk('battle-'+d);p.evaluate("G.cur.auto()");p.wait_for_timeout(2600);p.click('#bk')

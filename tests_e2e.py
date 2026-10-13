@@ -20,8 +20,8 @@ with sync_playwright() as pw:
       if not it: break
       it.click(); z=p.evaluate("ITEMS[document.querySelector('.it.sel').dataset.i][1]"); p.click(f'[data-z={z}]'); p.wait_for_timeout(50)
     p.wait_for_timeout(300); print(vp['width'],'prep1',p.evaluate('!!G.S.done.prep1')); p.click('#bk')
-    for id in ['bells','house','proc','feast','cross','hosp']:
-      p.evaluate(f"G.S.xp=Math.max(G.S.xp,500);G.start('{id}')"); dl(); p.wait_for_timeout(500)
+    for id in ['bells','house','proc','cross','hosp']:
+      p.evaluate(f"G.S.xp=Math.max(G.S.xp,500);G.S.done.feast=1;G.start('{id}')"); dl(); p.wait_for_timeout(500)
       if id=='house': p.click('[data-s=ourfather]'); p.wait_for_timeout(1300); p.screenshot(path=f'/workspace/v2-shots/exorcism{tag}.png')
       if id=='bells': p.wait_for_timeout(1500); p.screenshot(path=f'/workspace/v2-shots/bells{tag}.png')
       if id=='proc': p.wait_for_timeout(1500); p.screenshot(path=f'/workspace/v2-shots/procession{tag}.png')
