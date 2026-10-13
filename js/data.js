@@ -1,5 +1,5 @@
 const ITEMS={chalice:['Chalice','credence'],paten:['Paten','credence'],ciborium:['Ciborium','credence'],cruets:['Cruets','credence'],lavabo:['Lavabo bowl & towel','credence'],corporal:['Corporal','credence'],purificator:['Purificator','credence'],missal:['Roman Missal','altar'],candle:['Altar Candle','altar'],lectionary:['Lectionary','ambo'],cross:['Processional Cross','stand'],thurible:['Thurible','stand'],boat:['Incense Boat','stand'],bell:['Sanctus Bells','credence'],water:['Holy Water Aspergillum','stand']};
-const ZONES={altar:['Altar',36,40,28,16],credence:['Credence',6,52,24,14],ambo:['Ambo',70,52,24,14],stand:['Procession Stand',62,74,32,12]};
+const ZONES={altar:['Altar',36,40,28,16],credence:['Credence',6,52,24,14],ambo:['Ambo',70,52,24,14],stand:['Procession Stand',60,66,34,10]};
 const SEASONS=[
  {n:'Ordinary Time',c:'#4a4',items:['chalice','paten','cruets','missal','lectionary','candle','cross','purificator']},
  {n:'Advent',c:'#74a',items:['chalice','paten','cruets','missal','lectionary','candle','cross','corporal','lavabo']},
@@ -25,13 +25,13 @@ const SHOP={
  sword:['St Michael Medal','sword',150,{dev:4,guard:2},'+4 Devotion, -2 damage']};
 const DEMONS={house:['Spirit of Discord',60,7,'house'],cross:['Spirit of Despair',95,10,'crossroads'],hosp:['Legion\'s Whisper',140,13,'hospital']};
 const MISSIONS=[
- {id:'prep1',t:'Sunday Mass Prep',type:'prep',x:50,y:44,req:null},
- {id:'bells',t:'Bells at the Consecration',type:'bells',x:50,y:60,req:'prep1'},
- {id:'house',t:'Blessing a Troubled House',type:'exo',demon:'house',x:24,y:62,req:'bells'},
- {id:'proc',t:'Corpus Christi Procession',type:'proc',x:78,y:60,req:'house'},
- {id:'feast',t:'Feast-day Mass Prep',type:'prep',x:50,y:80,req:'proc'},
- {id:'cross',t:'The Crossroads',type:'exo',demon:'cross',x:20,y:84,req:'feast',rank:1},
- {id:'hosp',t:'The Old Hospital',type:'exo',demon:'hosp',x:80,y:86,req:'cross',rank:2}];
+ {id:'prep1',t:'Sunday Mass Prep',type:'prep',x:50,y:40,req:null},
+ {id:'bells',t:'Bells at the Consecration',type:'bells',x:50,y:51,req:'prep1'},
+ {id:'house',t:'Blessing a Troubled House',type:'exo',demon:'house',x:22,y:62,req:'bells'},
+ {id:'proc',t:'Corpus Christi Procession',type:'proc',x:78,y:62,req:'house'},
+ {id:'feast',t:'Feast-day Mass Prep',type:'prep',x:50,y:73,req:'proc'},
+ {id:'cross',t:'The Crossroads',type:'exo',demon:'cross',x:22,y:84,req:'feast',rank:1},
+ {id:'hosp',t:'The Old Hospital',type:'exo',demon:'hosp',x:78,y:84,req:'cross',rank:2}];
 const STORY={
  intro:['Welcome, my child. I am Fr. Thomas, pastor of St. Joseph\'s.','Serving at the altar is a great privilege — we prepare the place where heaven touches earth.','Begin by preparing the sanctuary for Sunday Mass. Grace earned can be offered in the sacristy shop for things that help you grow.'],
  bells:['Well done! Now, the bells. At the Consecration, ring them so all may know Christ is truly present.'],
