@@ -56,7 +56,7 @@ const MISSIONS=[
  {id:'final',t:"St. Peter's Vigil",type:'prep',sea:'papal',x:65,y:94,req:'crypt',rank:7,diff:4}];
 const STORY={
  intro:['Welcome, my child. I am Fr. Thomas, pastor of St. Joseph\'s.','Serving at the altar is a great privilege — we prepare the place where heaven touches earth.','Begin by preparing the sanctuary for Sunday Mass. Grace earned can be offered in the sacristy shop for things that help you grow.'],
- howto:['How to play: tap mission nodes on the map. In Mass Prep, tap an item then its zone — walk the server with drag, tap, or WASD.','Ring bells on cue, pray in blessings, and keep processions steady. Progress autosaves; use Saves for slots or a save code.'],
+ howto:['How to play: drag anywhere for a virtual joystick (or use WASD/arrows) to walk the server. In Mass Prep, walk onto shelf items to pick them up (carry up to 3), then walk into the correct zone to place them.','Follow the bouncing arrow. Collect Grace coins by walking near them. Ring bells on cue; pray in blessings; steer processions freely. Progress autosaves — use Saves for slots or a code.'],
  bells:['Well done! Now, the bells. At the Consecration, ring them so all may know Christ is truly present.'],
  house:['A family has asked for their home to be blessed. Strange things trouble them.','Remember: it is not our strength. Demons flee by the power of God. I lead; you assist with prayer and holy water. Stay close.'],
  proc:['Corpus Christi! We carry Our Lord through the streets. Guide the procession — keep the cross steady and the path clear.'],

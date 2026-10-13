@@ -82,51 +82,94 @@ function charScr(){scene={bg:'sacristy',draw:()=>spr(IMG[RANKS[rank()][2]],W*.5,
  h(s+'</div><button class="btn" id="bk">Back</button></div></div>');$('#bk').onclick=hub;
  UI.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{S.sp--;S.base[b.dataset.st]+=b.dataset.st=='faith'?10:1;save();sfx('ok');charScr()});
  UI.querySelectorAll('[data-sk]').forEach(b=>b.onclick=()=>{S.sp--;S.skills.push(b.dataset.sk);save();sfx('holy');charScr()})}
+
+// ---------- JOYSTICK / FREE MOVE ----------
+function makeJoy(){let keys={},joy={on:0,x:0,y:0,ox:0,oy:0},facing=0,unbound=0;
+ const onKey=e=>{const k=e.key.toLowerCase();const down=e.type==='keydown';if(['arrowleft','a'].includes(k))keys.l=down;if(['arrowright','d'].includes(k))keys.r=down;if(['arrowup','w'].includes(k))keys.u=down;if(['arrowdown','s'].includes(k))keys.d=down;if(['arrowleft','arrowright','arrowup','arrowdown',' '].includes(e.key.toLowerCase())||['a','d','w','s'].includes(k))e.preventDefault()};
+ addEventListener('keydown',onKey);addEventListener('keyup',onKey);
+ function bind(el){if(!el)return;el.onpointerdown=ev=>{if(ev.button!=null&&ev.button!==0)return;ev.preventDefault();try{el.setPointerCapture(ev.pointerId)}catch(e){}joy.on=1;joy.ox=ev.clientX;joy.oy=ev.clientY;joy.x=0;joy.y=0;const b=$('#joybase'),k=$('#joyknob');if(b){b.classList.remove('hide');b.style.left=joy.ox+'px';b.style.top=joy.oy+'px';if(k){k.style.left='50%';k.style.top='50%'}}};
+  el.onpointermove=ev=>{if(!joy.on)return;const dx=ev.clientX-joy.ox,dy=ev.clientY-joy.oy,m=56,len=Math.hypot(dx,dy)||1,c=Math.min(len,m);joy.x=dx/m;joy.y=dy/m;if(Math.hypot(joy.x,joy.y)>1){const n=Math.hypot(joy.x,joy.y);joy.x/=n;joy.y/=n}const k=$('#joyknob');if(k){k.style.left=`calc(50% + ${dx/len*c}px)`;k.style.top=`calc(50% + ${dy/len*c}px)`}};
+  const up=()=>{joy.on=0;joy.x=0;joy.y=0;const b=$('#joybase');if(b)b.classList.add('hide')};
+  el.onpointerup=up;el.onpointercancel=up;el.onlostpointercapture=up}
+ function vel(){let vx=(keys.r?1:0)-(keys.l?1:0),vy=(keys.d?1:0)-(keys.u?1:0);if(joy.on){vx+=joy.x;vy+=joy.y}const n=Math.hypot(vx,vy);if(n>.01){vx/=n;vy/=n;facing=vx}else{vx=vy=0}return{vx,vy,n:Math.hypot(vx,vy)}}
+ function unbind(){if(unbound)return;unbound=1;removeEventListener('keydown',onKey);removeEventListener('keyup',onKey);keys={};joy.on=0}
+ return{keys,joy,get facing(){return facing},set facing(v){facing=v},bind,vel,unbind}}
+function solidHit(nx,ny,solids,r=.028){for(const s of solids){if(nx>s.x-r&&nx<s.x+s.w+r&&ny>s.y-r&&ny<s.y+s.h+r)return s}return null}
+function tryMove(px,py,vx,vy,spd,dt,solids){let nx=px+vx*spd*dt,ny=py+vy*spd*dt;nx=Math.max(.05,Math.min(.95,nx));ny=Math.max(.34,Math.min(.93,ny));
+ if(solidHit(nx,py,solids))nx=px;if(solidHit(px,ny,solids))ny=py;if(solidHit(nx,ny,solids)){nx=px;ny=py}return{px:nx,py:ny}}
 // ---------- MISSION: PREP ----------
 function prep(m){const first=m.id=='prep1'&&!S.done.prep1;const diff=m.diff||0;
  let sea;if(m.sea)sea=SEASONS.find(s=>s.id===m.sea)||SEASONS[0];
  else if(m.id=='prep1')sea=SEASONS[0];
  else sea=SEASONS[1+Math.floor(Math.random()*Math.min(5,SEASONS.length-1))];
- let items=sea.items.slice();
- if(diff>=2){['thurible','boat','bell'].forEach(k=>{if(!items.includes(k)&&ITEMS[k])items.push(k)})}
- if(diff>=3){['water','corporal'].forEach(k=>{if(!items.includes(k))items.push(k)})}
- items=items.sort(()=>Math.random()-.5);const total=items.length;
- const lost=window.G.forceLost?items[0]:(!first&&Math.random()<.7?items[Math.floor(Math.random()*items.length)]:null);
- const spots=[[16,46],[84,46],[24,74],[46,72]],sp=spots[Math.random()*spots.length|0],lx=sp[0]/100,ly=sp[1]/100;
- let placed=0,mist=0,sel=null,found=!lost,time=Math.max(40,75+stats().wis*4-diff*12),t0=T,done=0;
- let px=.18,py=.86,tx=null,ty=null,pendingZ=null,keys={},joy={on:0,x:0,y:0},facing=0;
- const spd=.45;
- scene={bg:'church',tick:dt=>{if(done)return;time-=dt;if(time<=0){done=1;fin(false);return}
-   let vx=(keys.r?1:0)-(keys.l?1:0),vy=(keys.d?1:0)-(keys.u?1:0);
-   if(joy.on){vx+=joy.x;vy+=joy.y}
-   if(tx!=null){const dx=tx-px,dy=ty-py,len=Math.hypot(dx,dy);if(len>.025){vx+=dx/len;vy+=dy/len}else{tx=ty=null;if(pendingZ&&sel&&ITEMS[sel][1]==pendingZ&&near(pendingZ)){const z=pendingZ;pendingZ=null;placed++;burst(px*W,py*H);sfx('ok');items=items.filter(k=>k!=sel);sel=null;if(!items.length){ready();return}draw()}}}
-   const n=Math.hypot(vx,vy);if(n>.01){px=Math.max(.06,Math.min(.94,px+vx/n*spd*dt));py=Math.max(.38,Math.min(.92,py+vy/n*spd*dt));facing=vx}
-  },draw:()=>{spr(IMG.server,px*W,py*H,H*.16,0,facing<0);spr(IMG.priest,W*.85,H*.42,H*.14,1);if(!found){const a=.5+.5*Math.sin(T*5);const g=cx.createRadialGradient(lx*W,ly*H,2,lx*W,ly*H,50);g.addColorStop(0,`rgba(255,250,200,${.6+a*.4})`);g.addColorStop(1,'rgba(255,220,120,0)');cx.fillStyle=g;cx.beginPath();cx.arc(lx*W,ly*H,50,0,6.28);cx.fill();if(Math.random()<.2)burst(lx*W,ly*H,'255,240,180',2,1.5)}}};
- function fin(ok){done=1;scene.tick=null;unbindMove();result(sea.n+' Prep',30+placed*5-mist*3+diff*10,10+placed*3+diff*2,ok,m.id)}
- function ready(){done=1;unbindMove();sfx('lvl');burst(W/2,H*.45,'255,240,180',70,5);h(`<div class="center"><div class="panel" style="text-align:center"><h2>Mass is ready!</h2><p>Every item is in its place. Fr. Thomas smiles.</p><button class="btn" id="cont">Continue ▶</button></div></div>`);$('#cont').onclick=()=>fin(true)}
- function near(z){const Z=ZONES[z],zx=(Z[1]+Z[3]/2)/100,zy=(Z[2]+Z[4]/2)/100;return Math.hypot(px-zx,py-zy)<.28}
- function draw(){if(done)return;hud(`<span class="pill" style="border-color:${sea.c}">${sea.n}</span><span class="pill" id="tmr">⏱ ${Math.ceil(time)}</span><span class="pill">${placed}/${total}</span>`);
-  let s=`<div id="walk"></div>`;for(const z in ZONES){const Z=ZONES[z];s+=`<div class="zone" data-z="${z}" style="left:${Z[1]}%;top:${Z[2]}%;width:${Z[3]}%;height:${Z[4]}%">${Z[0]}</div>`}
-  s+=`<div class="log">${sel?'Place: <b>'+ITEMS[sel][0]+'</b>':'Tap an item, walk (drag/WASD/tap), then the zone.'}${!found?'<br>✨ The '+ITEMS[lost][0]+' is missing! Tap the glowing glint.':''}</div><div class="tray">`;
-  items.forEach(k=>{if(k==lost&&!found)return;s+=`<div class="it ${sel==k?'sel':''}" data-i="${k}"><img src="assets/i_${k}.webp" alt="${ITEMS[k][0]}" title="${ITEMS[k][0]}"></div>`});
-  s+='</div>';if(!found)s+=`<button id="lostspot" aria-label="glint" style="left:${sp[0]}vw;top:${sp[1]}vh"></button><div id="arrow" class="${T-t0>8?'':'hide'}" style="left:${sp[0]}vw;top:calc(${sp[1]}vh - 70px)">⬇</div>`;
-  h(s);
-  UI.querySelectorAll('[data-i]').forEach(e=>e.onclick=ev=>{ev.stopPropagation();sel=e.dataset.i;sfx('tap');draw()});
-  UI.querySelectorAll('[data-z]').forEach(e=>e.onclick=ev=>{ev.stopPropagation();if(!sel)return;
-   if(ITEMS[sel][1]==e.dataset.z){if(!(window.G.forceNear||near(e.dataset.z))){const Z=ZONES[e.dataset.z];tx=(Z[1]+Z[3]/2)/100;ty=(Z[2]+Z[4]/2)/100;pendingZ=e.dataset.z;sfx('tap');toast('Walking to the zone…');return}placed++;burst(ev.clientX,ev.clientY);sfx('ok');items=items.filter(k=>k!=sel);sel=null;if(!items.length){ready();return}}
-   else{mist++;time-=3;sfx('bad');toast('Not there — think: where is it used?')}draw()});
-  const ls=$('#lostspot');if(ls)ls.onclick=ev=>{ev.stopPropagation();found=true;sfx('ok');burst(lx*W,ly*H,'255,240,180',40);toast('Found the '+ITEMS[lost][0]+'!');draw()};
-  bindWalk()}
- const onKey=e=>{const k=e.key.toLowerCase();if(['arrowleft','a'].includes(k))keys.l=e.type==='keydown';if(['arrowright','d'].includes(k))keys.r=e.type==='keydown';if(['arrowup','w'].includes(k))keys.u=e.type==='keydown';if(['arrowdown','s'].includes(k))keys.d=e.type==='keydown'};
- function bindWalk(){const w=$('#walk');if(!w)return;let sx,sy,moved;
-  w.onpointerdown=ev=>{if(ev.target!==w)return;w.setPointerCapture(ev.pointerId);sx=ev.clientX;sy=ev.clientY;moved=0;joy.on=1;joy.x=0;joy.y=0};
-  w.onpointermove=ev=>{if(!joy.on)return;const dx=ev.clientX-sx,dy=ev.clientY-sy;if(Math.hypot(dx,dy)>12)moved=1;const m=80;joy.x=Math.max(-1,Math.min(1,dx/m));joy.y=Math.max(-1,Math.min(1,dy/m));tx=ty=null};
-  w.onpointerup=ev=>{joy.on=0;joy.x=0;joy.y=0;if(!moved){tx=ev.clientX/W;ty=ev.clientY/H}sx=sy=null};
-  w.onpointercancel=()=>{joy.on=0}}
- function unbindMove(){removeEventListener('keydown',onKey);removeEventListener('keyup',onKey);keys={}}
- addEventListener('keydown',onKey);addEventListener('keyup',onKey);
- if(sea.note)toast(sea.note);draw();const iv=setInterval(()=>{if(done||scene.tick==null){clearInterval(iv);return}const p=$('#tmr');if(p)p.textContent='⏱ '+Math.ceil(time);const ar=$('#arrow');if(ar&&T-t0>8)ar.classList.remove('hide')},250);
- window.G.cur={type:'prep',state:()=>({items,lost,found,done,px,py}),walkTo:(x,y)=>{tx=x;ty=y}}}
+ let pool=sea.items.slice();
+ if(diff>=2){['thurible','boat','bell'].forEach(k=>{if(!pool.includes(k)&&ITEMS[k])pool.push(k)})}
+ if(diff>=3){['water','corporal'].forEach(k=>{if(!pool.includes(k))pool.push(k)})}
+ pool=pool.sort(()=>Math.random()-.5);const total=pool.length,CAP=3;
+ const lost=window.G.forceLost?pool[0]:(!first&&Math.random()<.7?pool[Math.floor(Math.random()*pool.length)]:null);
+ const spots=[[16,46],[84,46],[24,74],[46,72]],sp=spots[Math.random()*spots.length|0];
+ let placed=0,mist=0,found=!lost,time=Math.max(90,150+stats().wis*5-diff*10),t0=T,done=0,wrongCD=0,dropCD=0,coinT=0;
+ let px=.5,py=.88,carry=[],flies=[],coins=[],J=makeJoy(),spd=.72;
+ // shelf layout along sacristy table (bottom)
+ const shelf=[];let si=0;pool.forEach(k=>{if(k===lost)return;const col=si%6,row=(si/6)|0;shelf.push({k,x:.12+col*.14,y:.78+row*.07,gone:0});si++});
+ const solids=[{x:.42,y:.43,w:.16,h:.08},{x:.0,y:.30,w:1,h:.04},{x:.0,y:.72,w:.14,h:.10},{x:.86,y:.72,w:.14,h:.10}];
+ function zoneRect(z){const Z=ZONES[z];return{x:Z[1]/100,y:Z[2]/100,w:Z[3]/100,h:Z[4]/100,cx:(Z[1]+Z[3]/2)/100,cy:(Z[2]+Z[4]/2)/100}}
+ function inZone(z){const r=zoneRect(z);return px>r.x-.02&&px<r.x+r.w+.02&&py>r.y-.02&&py<r.y+r.h+.02}
+ function nearPt(x,y,d=.07){return Math.hypot(px-x,py-y)<d}
+ function objective(){if(!found&&lost)return{x:sp[0]/100,y:sp[1]/100,t:'Find the missing '+ITEMS[lost][0]};
+  if(carry.length){const z=ITEMS[carry[0]][1],r=zoneRect(z);return{x:r.cx,y:r.cy,t:'Carry to '+ZONES[z][0]+' ('+carry.length+'/'+CAP+')'}}
+  const next=shelf.find(it=>!it.gone);if(next)return{x:next.x,y:next.y,t:'Pick up items from the shelves'};
+  return{x:.5,y:.5,t:'Mass is ready!'}}
+ function spawnCoin(x,y,v=1){coins.push({x,y,v,vac:0})}
+ function fin(ok){done=1;scene.tick=null;J.unbind();result(sea.n+' Prep',30+placed*5-mist*3+diff*10,10+placed*3+diff*2,ok,m.id)}
+ function ready(){done=1;J.unbind();sfx('lvl');burst(W/2,H*.45,'255,240,180',70,5);h(`<div class="center"><div class="panel" style="text-align:center"><h2>Mass is ready!</h2><p>Every item is in its place. Fr. Thomas smiles.</p><button class="btn" id="cont">Continue ▶</button></div></div>`);$('#cont').onclick=()=>fin(true)}
+ function ui(){const o=objective();hud(`<span class="pill" style="border-color:${sea.c}">${sea.n}</span><span class="pill" id="tmr">⏱ ${Math.ceil(time)}</span><span class="pill">${placed}/${total}</span><span class="pill">Hands ${carry.length}/${CAP}</span>`);
+  let zs='';for(const z in ZONES){const Z=ZONES[z];zs+=`<div class="zone" data-z="${z}" style="left:${Z[1]}%;top:${Z[2]}%;width:${Z[3]}%;height:${Z[4]}%;pointer-events:none">${Z[0]}</div>`}
+  h(`<div id="play" class="play"><div class="objstrip" id="obj">${o.t}</div>${zs}<div id="navarr">⬇</div><div id="joybase" class="hide"><div id="joyknob"></div></div></div>`);
+  J.bind($('#play'))}
+ ui();
+ if(sea.note)toast(sea.note);
+ scene={bg:'church',tick:dt=>{if(done)return;time-=dt;wrongCD=Math.max(0,wrongCD-dt);dropCD=Math.max(0,dropCD-dt);coinT-=dt;
+  if(time<=0){fin(false);return}
+  if(coinT<=0){coinT=4+Math.random()*3;spawnCoin(.15+Math.random()*.7,.55+Math.random()*.3,1)}
+  const{vx,vy}=J.vel();if(vx||vy){const m=tryMove(px,py,vx,vy,spd,dt,solids);px=m.px;py=m.py;J.facing=vx||J.facing}
+  // pick lost glint
+  if(!found&&lost&&nearPt(sp[0]/100,sp[1]/100,.09)){found=1;sfx('ok');burst(sp[0]/100*W,sp[1]/100*H,'255,240,180',40);toast('Found the '+ITEMS[lost][0]+'!');
+   if(carry.length<CAP){carry.push(lost);sfx('ok')}else shelf.push({k:lost,x:sp[0]/100,y:sp[1]/100,gone:0})}
+  // pick shelf items
+  for(const it of shelf){if(it.gone||carry.length>=CAP)continue;if(nearPt(it.x,it.y,.08)){it.gone=1;carry.push(it.k);sfx('ok');burst(it.x*W,it.y*H,'255,220,140',12,2)}}
+  // drop in zones
+  for(const z in ZONES){if(!inZone(z)||!carry.length||dropCD>0)continue;
+   const match=carry.findIndex(k=>ITEMS[k][1]===z);
+   if(match<0){if(wrongCD<=0){wrongCD=1.2;mist++;sfx('bad');toast('Not there — think: where is it used?')}continue}
+   const k=carry.splice(match,1)[0];const r=zoneRect(z);dropCD=.35;
+   flies.push({k,x:px,y:py,sx:px,sy:py,tx:r.cx,ty:r.cy,t:0});sfx('ok')}
+  // fly anim complete
+  for(let i=flies.length-1;i>=0;i--){const f=flies[i];f.t=Math.min(1,f.t+dt*3.2);const u=f.t*f.t*(3-2*f.t);f.x=f.sx+(f.tx-f.sx)*u;f.y=f.sy+(f.ty-f.sy)*u;
+   if(f.t>=1){flies.splice(i,1);placed++;S.grace+=1;save();spawnCoin(f.tx,f.ty,1);burst(f.tx*W,f.ty*H,'255,230,150',28,4);
+    const obj=$('#obj');if(obj)obj.textContent=objective().t;if(placed>=total&&!flies.length&&!carry.length&&shelf.every(it=>it.gone)&&found){ready();return}}}
+  // vacuum coins
+  for(let i=coins.length-1;i>=0;i--){const c=coins[i];const d=Math.hypot(px-c.x,py-c.y);if(d<.12||c.vac){c.vac=1;c.x+=(px-c.x)*dt*8;c.y+=(py-c.y)*dt*8;if(d<.04){coins.splice(i,1);S.grace+=c.v;save();burst(px*W,py*H,'255,215,100',8,2)}}}
+  // HUD tick
+  const tm=$('#tmr');if(tm)tm.textContent='⏱ '+Math.ceil(time);
+  const obj=$('#obj');if(obj){const o=objective();if(obj.textContent!==o.t)obj.textContent=o.t}
+  const ar=$('#navarr');if(ar){const o=objective();ar.style.left=(o.x*100)+'%';ar.style.top=(o.y*100-8)+'%'}
+ },draw:()=>{
+  // shelf items
+  shelf.forEach(it=>{if(it.gone)return;const img=IMG['i_'+it.k];if(img&&img.complete)cx.drawImage(img,it.x*W-18,it.y*H-18,36,36);else{cx.fillStyle='#dcaf46';cx.fillRect(it.x*W-10,it.y*H-10,20,20)}});
+  // coins
+  coins.forEach(c=>{cx.fillStyle='#ffd36a';cx.beginPath();cx.arc(c.x*W,c.y*H,7+Math.sin(T*8),0,6.28);cx.fill();cx.strokeStyle='#a77a22';cx.stroke()});
+  // lost glint
+  if(!found&&lost){const lx=sp[0]/100*W,ly=sp[1]/100*H,a=.5+.5*Math.sin(T*5);const g=cx.createRadialGradient(lx,ly,2,lx,ly,50);g.addColorStop(0,`rgba(255,250,200,${.6+a*.4})`);g.addColorStop(1,'rgba(255,220,120,0)');cx.fillStyle=g;cx.beginPath();cx.arc(lx,ly,50,0,6.28);cx.fill()}
+  spr(IMG.priest,W*.85,H*.42,H*.14,1);
+  // player + carried stack wobble
+  const sx=px*W,sy=py*H;spr(IMG.server,sx,sy,H*.15,0,J.facing<0);
+  carry.forEach((k,i)=>{const img=IMG['i_'+k],wx=Math.sin(T*10+i)*4,wy=Math.sin(T*8+i*1.3)*3;const ix=sx+10+i*6+wx,iy=sy-H*.12-i*14+wy;if(img&&img.complete)cx.drawImage(img,ix-14,iy-14,28,28)});
+  // flying drops
+  flies.forEach(f=>{const img=IMG['i_'+f.k];if(img&&img.complete)cx.drawImage(img,f.x*W-16,f.y*H-16,32,32);burst(f.x*W,f.y*H,'255,230,150',1,.5)});
+ }};
+ window.G.cur={type:'prep',state:()=>({shelf:shelf.map(it=>({k:it.k,x:it.x,y:it.y,gone:it.gone})),carry:carry.slice(),placed,total,lost,found,done,px,py,coins:coins.length}),
+  move:(x,y)=>{px=x;py=y},joy:J}}
 // ---------- MISSION: BELLS ----------
 function bells(m){const diff=m.diff||0;const cues=['Epiclesis','Elevation of the Host','Elevation of the Host','Elevation of the Chalice','Elevation of the Chalice','Ecce Agnus Dei'];let notes=[],t0=T+2,score=0,hits=0,idx=0;
  cues.forEach((c,i)=>notes.push({t:t0+i*(1.6-diff*.12)+Math.random()*.4,c,st:0}));const lineY=()=>H*.72,speed=()=>H*(.35+diff*.04),win=.18+stats().wis*.01-diff*.02;
@@ -151,20 +194,27 @@ function exo(m){const D0=DEMONS[m.demon],diff=m.diff||0,st=stats();const D=[D0[0
    if(stun){stun=0;log='The spirit cannot bear the sight of the Cross and cowers.'}else{const atk=['whispers doubt','stirs up fear','mocks your sins','hurls a cold wind'][Math.random()*4|0],dmg=Math.max(1,D[2]+(Math.random()*5|0)-st.guard);fa-=dmg;sfx('hit');log=`The spirit ${atk} (−${dmg} Faith). Fr. Thomas: "Hold fast — Christ has already won."`}
    busy=0;if(fa<=0){result('Retreat & Pray',30,0,false);toast('Go to Confession, rest, strengthen your faith, and return.');return}draw()},900)}
  draw();window.G.cur={type:'exo',auto:()=>{hp=1;act('ourfather')}}}
-// ---------- MISSION: PROCESSION (lane runner) ----------
-function proc(m){const diff=m.diff||0;let lane=1,dist=0,goal=60+diff*25,obs=[],hitc=0,inc=0,spawn=0,over=0;const LX=l=>W*(.25+l*.25);
+// ---------- MISSION: PROCESSION (free walk) ----------
+function proc(m){const diff=m.diff||0;let px=.5,py=.86,dist=0,goal=60+diff*25,obs=[],hitc=0,inc=0,spawn=0,over=0,inv=0,J=makeJoy(),spd=.7;
  const kinds=[['Dropped kneeler','#6b3a1c'],['Puddle','#4a7ab0'],['Stray dog','#a0703a'],['Fallen candle','#eee']];
- scene={bg:'crossroads',tick:dt=>{if(over)return;dist+=dt*6;spawn-=dt;if(spawn<=0){spawn=.9-Math.min(.45,dist/200)-diff*.05;const r=Math.random();obs.push({l:Math.random()*3|0,y:-40,k:r<.22?-1:Math.random()*4|0})}
-   obs.forEach(o=>{o.y+=dt*H*(.35+diff*.03);if(!o.d&&o.y>H*.78&&o.y<H*.86&&o.l==lane){o.d=1;if(o.k<0){inc++;sfx('ok');burst(LX(lane),H*.8,'200,200,255')}else{hitc++;sfx('bad');toast(kinds[o.k][0]+'! Keep the cross steady');}}});obs=obs.filter(o=>o.y<H+50&&!(o.d&&o.k<0));
-   if(dist>=goal){over=1;result('Corpus Christi Procession',50+inc*5-hitc*5+diff*10,20+inc*2,hitc<5,m.id)}if(hitc>=5){over=1;result('Procession',20,0,false)}},
-  draw:()=>{cx.fillStyle='rgba(60,40,20,.35)';cx.fillRect(W*.12,0,W*.76,H);for(let i=0;i<3;i++){cx.strokeStyle='rgba(255,230,150,.2)';cx.beginPath();cx.moveTo(W*(.125+i*.25)+W*.125,0);cx.lineTo(W*(.125+i*.25)+W*.125,H);cx.stroke()}
-   obs.forEach(o=>{if(o.d&&o.k>=0)return;if(o.k<0){cx.fillStyle='rgba(220,220,255,.8)';cx.beginPath();cx.arc(LX(o.l),o.y,14+Math.sin(T*6)*3,0,6.28);cx.fill()}else{cx.fillStyle=kinds[o.k][1];cx.beginPath();cx.ellipse(LX(o.l),o.y,30,18,0,0,6.28);cx.fill();cx.fillStyle='#fff';cx.font='11px Georgia';cx.textAlign='center';cx.fillText(kinds[o.k][0],LX(o.l),o.y-22)}});
-   spr(IMG.i_cross,LX(lane),H*.74,H*.12);spr(IMG.server,LX(lane),H*.92,H*.14);spr(IMG.priest,LX(lane)+(W*.08),H*1.0,H*.12,1);
-   const ps=$('#pst');if(ps)ps.textContent=`Route ${Math.min(100,dist/goal*100|0)}% · Incense ${inc} · Stumbles ${hitc}/5`}};
- hud();h(`<div class="log"><span id="pst"></span><br>Swipe / tap left-right (or arrow keys). Avoid obstacles, gather incense clouds.</div><div id="pl" style="position:absolute;left:0;top:0;bottom:0;width:50%"></div><div id="pr" style="position:absolute;right:0;top:0;bottom:0;width:50%"></div>`);
- $('#pl').onpointerdown=()=>lane=Math.max(0,lane-1);$('#pr').onpointerdown=()=>lane=Math.min(2,lane+1);
- const kd=e=>{if(e.key=='ArrowLeft')lane=Math.max(0,lane-1);if(e.key=='ArrowRight')lane=Math.min(2,lane+1)};addEventListener('keydown',kd);
- window.G.cur={type:'proc',state:()=>({lane,obs:obs.map(o=>({l:o.l,y:o.y/H,k:o.k,d:o.d}))}),auto:()=>{dist=goal}}}
+ const solids=[{x:.0,y:.0,w:.12,h:1},{x:.88,y:.0,w:.12,h:1}];
+ scene={bg:'crossroads',tick:dt=>{if(over)return;dist+=dt*5.5;spawn-=dt;inv=Math.max(0,inv-dt);
+  if(spawn<=0){spawn=.85-Math.min(.4,dist/200)-diff*.05;const r=Math.random();obs.push({x:.25+((Math.random()*3|0)*.25),y:-.08,k:r<.22?-1:Math.random()*4|0,d:0})}
+  const{vx,vy}=J.vel();let fx=vx,fy=vy*.35-.15; // gentle forward drift; stick steers
+  if(!J.joy.on&&!((J.keys.l||J.keys.r||J.keys.u||J.keys.d)))fy=-.2;
+  const m=tryMove(px,py,fx,fy,spd,dt,solids);px=Math.max(.18,Math.min(.82,m.px));py=Math.max(.55,Math.min(.92,m.py));
+  obs.forEach(o=>{o.y+=dt*(.35+diff*.03);if(!o.d&&Math.abs(o.y-py)<.05&&Math.abs(o.x-px)<.07){o.d=1;if(o.k<0){inc++;sfx('ok');burst(px*W,py*H,'200,200,255')}else if(inv<=0){hitc++;inv=.7;sfx('bad');toast(kinds[o.k][0]+'! Keep the cross steady')}}});
+  obs=obs.filter(o=>o.y<1.1);
+  if(dist>=goal){over=1;J.unbind();result('Corpus Christi Procession',50+inc*5-hitc*5+diff*10,20+inc*2,hitc<5,m.id)}
+  if(hitc>=5){over=1;J.unbind();result('Procession',20,0,false)}
+  const ps=$('#pst');if(ps)ps.textContent=`Route ${Math.min(100,dist/goal*100|0)}% · Incense ${inc} · Stumbles ${hitc}/5`},
+  draw:()=>{cx.fillStyle='rgba(60,40,20,.35)';cx.fillRect(W*.12,0,W*.76,H);for(let i=0;i<3;i++){cx.strokeStyle='rgba(255,230,150,.2)';cx.beginPath();cx.moveTo(W*(.25+i*.25),0);cx.lineTo(W*(.25+i*.25),H);cx.stroke()}
+   obs.forEach(o=>{if(o.d&&o.k>=0)return;const ox=o.x*W,oy=o.y*H;if(o.k<0){cx.fillStyle='rgba(220,220,255,.8)';cx.beginPath();cx.arc(ox,oy,14+Math.sin(T*6)*3,0,6.28);cx.fill()}else{cx.fillStyle=kinds[o.k][1];cx.beginPath();cx.ellipse(ox,oy,30,18,0,0,6.28);cx.fill();cx.fillStyle='#fff';cx.font='11px Georgia';cx.textAlign='center';cx.fillText(kinds[o.k][0],ox,oy-22)}});
+   spr(IMG.i_cross,px*W,py*H-H*.14,H*.12);spr(IMG.server,px*W,py*H,H*.14,0,J.facing<0);spr(IMG.priest,px*W+W*.08,py*H+H*.06,H*.12,1)}};
+ hud();h(`<div id="play" class="play"><div class="objstrip" id="pst"></div><div class="log" style="top:calc(var(--hh) + 36px)">Drag to steer · WASD/arrows · avoid obstacles, gather incense.</div><div id="joybase" class="hide"><div id="joyknob"></div></div></div>`);
+ J.bind($('#play'));
+ window.G.cur={type:'proc',state:()=>({px,py,obs:obs.map(o=>({x:o.x,y:o.y,k:o.k,d:o.d})),hitc,inc,dist,goal}),auto:()=>{dist=goal}}}
+
 window.G={get S(){return S},set S(v){S=v},hub,start:id=>start(MISSIONS.find(m=>m.id==id)),cur:null,save,loadS};
 let imgsLeft=Object.keys(IMG).length;Object.values(IMG).forEach(i=>{const f=()=>{if(--imgsLeft==0)0};i.onload=f;i.onerror=()=>console.warn('img fail',i.src)});
 hub();
