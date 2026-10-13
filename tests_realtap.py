@@ -8,7 +8,7 @@ with sync_playwright() as pw:
   for W,H in [(360,780),(412,915)]:
     p=b.new_page(viewport={'width':W,'height':H},has_touch=True)
     p.on('pageerror',lambda e: errs.append(str(e)));p.on('console',lambda m: m.type=='error' and errs.append(m.text))
-    p.goto(URL);p.evaluate('localStorage.clear()');p.reload();p.wait_for_timeout(800)
+    p.goto(URL);p.evaluate('localStorage.clear()');p.reload();p.wait_for_timeout(800);p.evaluate('G.forceNear=1')
     def dl():
       while p.is_visible('#dlg'): p.tap('#dlg')
     def place():

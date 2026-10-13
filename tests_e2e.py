@@ -7,7 +7,7 @@ with sync_playwright() as pw:
   for vp in [{'width':390,'height':844},{'width':1280,'height':800}]:
     p=b.new_page(viewport=vp,has_touch=True)
     p.on('console',lambda m: m.type=='error' and errs.append(m.text)); p.on('pageerror',lambda e: errs.append(str(e)))
-    p.goto(URL); p.evaluate('localStorage.clear()'); p.reload(); p.wait_for_timeout(1000)
+    p.goto(URL); p.evaluate('localStorage.clear()'); p.reload(); p.wait_for_timeout(1000); p.evaluate('G.forceNear=1')
     tag='' if vp['width']<500 else '-desktop'
     def dl():
       while p.is_visible('#dlg'): p.click('#dlg')

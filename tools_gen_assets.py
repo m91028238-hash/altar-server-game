@@ -24,24 +24,18 @@ def church(name,variant=0):
     W,H=1080,1440; im=grad(W*2,H*2,(60,32,24),(28,14,10)); d=ImageDraw.Draw(im)
     S=2
     # back walls (isometric)
-    d.polygon([(0,300*S),(W*S/2*S/S,0),(W*S/2,820*S),(0,1100*S)],fill=(120,70,45))
+    d.polygon([(0,300*S),(W*S/2,0),(W*S/2,820*S),(0,1100*S)],fill=(120,70,45))
     d.polygon([(W*S,300*S),(W*S/2,0),(W*S/2,820*S),(W*S,1100*S)],fill=(95,52,34))
-    # windows (stained glass)
-    cols=[(220,60,60),(60,110,220),(240,190,60),(70,170,90)]
-    for k in range(3):
-        x=120*S+k*130*S; y=380*S-k*65*S+60*S
-        for side in (0,1):
-            xx = x if side==0 else W*S-x
-            pts=[(xx-30*S,y+40*S),(xx-30*S,y+200*S),(xx+30*S,y+200*S),(xx+30*S,y+40*S)]
-            d.polygon(pts,fill=(30,20,30)); d.pieslice([xx-30*S,y,xx+30*S,y+80*S],180,360,fill=(30,20,30))
-            for q in range(8):
-                c=random.choice(cols); yy=y+30*S+q*20*S
-                d.rectangle([xx-24*S,yy,xx+24*S,yy+18*S],fill=c)
-            glow(im,(xx,y+120*S),110*S,(255,200,120),70)
-    d=ImageDraw.Draw(im)
-    iso_floor(d,W*S/2,800*S,9,70*S,(170,130,95),(140,100,70))
+    # floor clipped below windows; stained glass drawn later on top of walls
+    def iso_floor_clip(d,cx,cy,n,s,c1,c2,ymin=0):
+        for i in range(-n,n):
+            for j in range(-n,n):
+                x=cx+(i-j)*s; y=cy+(i+j)*s/2
+                if y+s<ymin: continue
+                d.polygon([(x,y),(x+s,y+s/2),(x,y+s),(x-s,y+s/2)],fill=c1 if (i+j)%2 else c2)
+    iso_floor_clip(d,W*S/2,900*S,7,70*S,(170,130,95),(140,100,70),ymin=720*S)
     # sanctuary step + altar
-    ax,ay=W*S/2,760*S
+    ax,ay=W*S/2,780*S
     d.polygon([(ax-300*S,ay),(ax,ay-150*S),(ax+300*S,ay),(ax,ay+150*S)],fill=(200,170,130))
     d.polygon([(ax-300*S,ay),(ax,ay+150*S),(ax,ay+180*S),(ax-300*S,ay+30*S)],fill=(150,120,90))
     d.polygon([(ax+300*S,ay),(ax,ay+150*S),(ax,ay+180*S),(ax+300*S,ay+30*S)],fill=(120,95,70))
@@ -52,9 +46,21 @@ def church(name,variant=0):
     d.polygon([(bx+150*S,by),(bx,by+70*S),(bx,by+170*S),(bx+150*S,by+100*S)],fill=(195,185,170))
     d.line([(bx-150*S,by+10*S),(bx,by+80*S),(bx+150*S,by+10*S)],fill=(210,170,60),width=8*S)
     # crucifix on wall
-    cx=W*S/2; d.rectangle([cx-8*S,250*S,cx+8*S,560*S],fill=(90,50,25)); d.rectangle([cx-80*S,320*S,cx+80*S,336*S],fill=(90,50,25))
-    d.ellipse([cx-14*S,334*S,cx+14*S,362*S],fill=(230,200,160))
-    glow(im,(cx,400*S),200*S,(255,210,140),60); d=ImageDraw.Draw(im)
+    cx=W*S/2; d.rectangle([cx-8*S,200*S,cx+8*S,520*S],fill=(90,50,25)); d.rectangle([cx-80*S,280*S,cx+80*S,296*S],fill=(90,50,25))
+    d.ellipse([cx-14*S,294*S,cx+14*S,322*S],fill=(230,200,160))
+    glow(im,(cx,360*S),200*S,(255,210,140),60); d=ImageDraw.Draw(im)
+    # stained glass (after floor so never hidden)
+    cols=[(220,60,60),(60,110,220),(240,190,60),(70,170,90),(180,80,200)]
+    for k in range(3):
+        x=140*S+k*120*S; y=240*S-k*55*S
+        for side in (0,1):
+            xx = x if side==0 else W*S-x
+            pts=[(xx-28*S,y+36*S),(xx-28*S,y+170*S),(xx+28*S,y+170*S),(xx+28*S,y+36*S)]
+            d.polygon(pts,fill=(30,20,30)); d.pieslice([xx-28*S,y,xx+28*S,y+72*S],180,360,fill=(30,20,30))
+            for q in range(7):
+                c=random.choice(cols); yy=y+28*S+q*18*S
+                d.rectangle([xx-22*S,yy,xx+22*S,yy+16*S],fill=c)
+            glow(im,(xx,y+100*S),100*S,(255,200,120),80); d=ImageDraw.Draw(im)
     # candles
     for dx in (-110,-60,60,110):
         x=bx+dx*S; y=by-10*S
@@ -63,7 +69,7 @@ def church(name,variant=0):
     # pews
     for r in range(4):
         for side in (-1,1):
-            px=W*S/2+side*(260+r*70)*S; py=(1000+r*95)*S
+            px=W*S/2+side*(260+r*70)*S; py=(1020+r*95)*S
             d.polygon([(px-110*S,py),(px,py-55*S),(px+110*S,py),(px,py+55*S)],fill=(110,60,30))
             d.polygon([(px-110*S,py),(px,py+55*S),(px,py+85*S),(px-110*S,py+30*S)],fill=(80,42,20))
     if variant==1:  # sacristy tint: cabinets
@@ -167,6 +173,12 @@ def scap(d,S): d.line([(30*S,10*S),(40*S,70*S)],fill=(120,80,40),width=4*S); d.l
 def vest(d,S): d.polygon([(30*S,20*S),(98*S,20*S),(110*S,120*S),(18*S,120*S)],fill=(240,240,240)); d.polygon([(54*S,20*S),(74*S,20*S),(70*S,120*S),(58*S,120*S)],fill=G)
 def medal(d,S): d.ellipse([28*S,28*S,100*S,100*S],fill=(200,200,215)); d.ellipse([38*S,38*S,90*S,90*S],fill=(160,160,180)); d.polygon([(64*S,44*S),(54*S,84*S),(74*S,84*S)],fill=(230,230,240))
 def sword(d,S): d.polygon([(64*S,6*S),(72*S,90*S),(56*S,90*S)],fill=(220,230,255)); d.rectangle([40*S,88*S,88*S,96*S],fill=G); d.rectangle([60*S,96*S,68*S,122*S],fill=(120,70,30))
-for n,f in dict(chalice=chalice,paten=paten,ciborium=ciborium,cruets=cruets,missal=missal,lectionary=lectionary,candle=candle,cross=crossi,bell=bell,corporal=corporal,purificator=purif,lavabo=lavabo,thurible=thurible,boat=boat,water=water,rosary=rosary,scapular=scap,vestment=vest,medal=medal,sword=sword).items(): item(n,f)
+def mitre(d,S):
+    d.polygon([(34*S,110*S),(64*S,10*S),(94*S,110*S)],fill=(240,235,220)); d.polygon([(40*S,110*S),(64*S,24*S),(88*S,110*S)],fill=(250,245,230)); d.line([(64*S,20*S),(64*S,108*S)],fill=G,width=4*S); d.ellipse([54*S,50*S,74*S,70*S],fill=G)
+def crozier(d,S):
+    d.arc([30*S,8*S,90*S,70*S],200,100,fill=G,width=8*S); d.line([(64*S,50*S),(64*S,120*S)],fill=G,width=7*S); d.ellipse([56*S,112*S,72*S,124*S],fill=GD)
+def chrism(d,S):
+    d.ellipse([40*S,36*S,88*S,100*S],fill=(220,200,120),outline=G,width=3*S); d.rectangle([58*S,16*S,70*S,40*S],fill=G); d.ellipse([50*S,48*S,78*S,78*S],fill=(180,150,60)); d.rectangle([36*S,100*S,92*S,116*S],fill=GD)
+for n,f in dict(chalice=chalice,paten=paten,ciborium=ciborium,cruets=cruets,missal=missal,lectionary=lectionary,candle=candle,cross=crossi,bell=bell,corporal=corporal,purificator=purif,lavabo=lavabo,thurible=thurible,boat=boat,water=water,rosary=rosary,scapular=scap,vestment=vest,medal=medal,sword=sword,mitre=mitre,crozier=crozier,chrism=chrism).items(): item(n,f)
 # UI frame
 im=ss(400,200); d=ImageDraw.Draw(im); d.rounded_rectangle([4,4,796,396],40,fill=(40,22,14,235),outline=(220,175,70),width=10); d.rounded_rectangle([24,24,776,376],28,outline=(150,110,40),width=4); fin(im,'frame')
