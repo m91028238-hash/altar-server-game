@@ -47,7 +47,7 @@ function result(title,xp,gr,ok,id){if(ok&&id)S.done[id]=1;const x=ok?gain(xp,gr)
  h(`<div class="center"><div class="panel" style="text-align:center"><h2>${title}</h2><p>${ok?(fin?'The vigil is complete.':'Mission complete!'):'Not this time — try again.'}</p><p>+${x} XP · +${ok?gr:0} Grace</p><button class="btn" id="bk">${fin?'Continue ▶':'Return to Parish'}</button></div></div>`);hud();
  $('#bk').onclick=()=>{if(fin)ending();else hub()}}
 // ---------- HUB ----------
-const unlocked=m=>(!m.req||S.done[m.req])&&(!m.rank||rank()>=m.rank);
+const unlocked=m=>!m.req||S.done[m.req];
 function hub(){bgmOn=1;scene={bg:'hub',draw:()=>{spr(IMG[RANKS[rank()][2]],W*.5,H*.34,Math.min(100,H*.12),0)}};hud();
  let s=`<div class="gtitle">Game 1: Altar Server</div><div style="position:absolute;inset:0">`;
  MISSIONS.forEach(m=>{const u=unlocked(m);s+=`<div class="node ${u?'':'lock'}" style="left:${m.x}%;top:${m.y}%"><button class="btn sm" data-m="${m.id}" ${u?'':'disabled'}>${S.done[m.id]?'✓ ':u?'':'🔒 '}${m.t}</button></div>`});
