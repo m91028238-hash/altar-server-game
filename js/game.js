@@ -199,15 +199,15 @@ function proc(m){const diff=m.diff||0;let px=.5,py=.86,dist=0,goal=60+diff*25,ob
  const kinds=[['Dropped kneeler','#6b3a1c'],['Puddle','#4a7ab0'],['Stray dog','#a0703a'],['Fallen candle','#eee']];
  const solids=[{x:.0,y:.0,w:.12,h:1},{x:.88,y:.0,w:.12,h:1}];
  scene={bg:'crossroads',tick:dt=>{if(over)return;dist+=dt*5.5;spawn-=dt;inv=Math.max(0,inv-dt);
-  if(spawn<=0){spawn=1.25-Math.min(.35,dist/250)-diff*.05;const r=Math.random();obs.push({x:.25+((Math.random()*3|0)*.25),y:-.08,k:r<.22?-1:Math.random()*4|0,d:0})}
+  if(spawn<=0){spawn=.85-Math.min(.4,dist/200)-diff*.05;const r=Math.random();obs.push({x:.25+((Math.random()*3|0)*.25),y:-.08,k:r<.22?-1:Math.random()*4|0,d:0})}
   const{vx,vy}=J.vel();let fx=vx,fy=vy*.35-.15; // gentle forward drift; stick steers
   if(!J.joy.on&&!((J.keys.l||J.keys.r||J.keys.u||J.keys.d)))fy=-.2;
-  const m=tryMove(px,py,fx,fy,spd,dt,solids);px=Math.max(.18,Math.min(.82,m.px));py=Math.max(.55,Math.min(.92,m.py));
-  obs.forEach(o=>{o.y+=dt*(.3+diff*.03);if(!o.d&&Math.abs(o.y-py)<.05&&Math.abs(o.x-px)<(o.k<0?.08:.06)){o.d=1;if(o.k<0){inc++;sfx('ok');burst(px*W,py*H,'200,200,255')}else if(inv<=0){hitc++;inv=.7;sfx('bad');toast(kinds[o.k][0]+'! Keep the cross steady')}}});
+  const mv=tryMove(px,py,fx,fy,spd,dt,solids);px=Math.max(.18,Math.min(.82,mv.px));py=Math.max(.55,Math.min(.92,mv.py));
+  obs.forEach(o=>{o.y+=dt*(.35+diff*.03);if(!o.d&&Math.abs(o.y-py)<.05&&Math.abs(o.x-px)<.07){o.d=1;if(o.k<0){inc++;sfx('ok');burst(px*W,py*H,'200,200,255')}else if(inv<=0){hitc++;inv=.7;sfx('bad');toast(kinds[o.k][0]+'! Keep the cross steady')}}});
   obs=obs.filter(o=>o.y<1.1);
-  if(dist>=goal){over=1;J.unbind();result('Corpus Christi Procession',50+inc*5-hitc*5+diff*10,20+inc*2,true,m.id)}
-  if(hitc>=8){over=1;J.unbind();result('Procession',20,0,false)}
-  const ps=$('#pst');if(ps)ps.textContent=`Route ${Math.min(100,dist/goal*100|0)}% · Incense ${inc} · Stumbles ${hitc}/8`},
+  if(dist>=goal){over=1;J.unbind();result('Corpus Christi Procession',50+inc*5-hitc*5+diff*10,20+inc*2,hitc<5,m.id)}
+  if(hitc>=5){over=1;J.unbind();result('Procession',20,0,false)}
+  const ps=$('#pst');if(ps)ps.textContent=`Route ${Math.min(100,dist/goal*100|0)}% · Incense ${inc} · Stumbles ${hitc}/5`},
   draw:()=>{cx.fillStyle='rgba(60,40,20,.35)';cx.fillRect(W*.12,0,W*.76,H);for(let i=0;i<3;i++){cx.strokeStyle='rgba(255,230,150,.2)';cx.beginPath();cx.moveTo(W*(.25+i*.25),0);cx.lineTo(W*(.25+i*.25),H);cx.stroke()}
    obs.forEach(o=>{if(o.d&&o.k>=0)return;const ox=o.x*W,oy=o.y*H;if(o.k<0){cx.fillStyle='rgba(220,220,255,.8)';cx.beginPath();cx.arc(ox,oy,14+Math.sin(T*6)*3,0,6.28);cx.fill()}else{cx.fillStyle=kinds[o.k][1];cx.beginPath();cx.ellipse(ox,oy,30,18,0,0,6.28);cx.fill();cx.fillStyle='#fff';cx.font='11px Georgia';cx.textAlign='center';cx.fillText(kinds[o.k][0],ox,oy-22)}});
    spr(IMG.i_cross,px*W,py*H-H*.14,H*.12);spr(IMG.server,px*W,py*H,H*.14,0,J.facing<0);spr(IMG.priest,px*W+W*.08,py*H+H*.06,H*.12,1)}};
